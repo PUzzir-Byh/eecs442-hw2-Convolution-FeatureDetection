@@ -5,41 +5,8 @@
 # A .gitignore file will tell git which files and directories to ignore and
 # not add to version control.
 
-# EECS 485 All Projects
-submit.tar.gz
-submit.tar.xz
-starter_files.tar.gz
-starter_files.tar.xz
-
-# EECS 485 Project 1
-/insta485/html/
-/hello/html/
-/hello_css/html/
-
-# EECS 485 Project 2
-*.pem
-*.db
-var/
-
-# EECS 485 Project 3
-node_modules/
-cookies.txt
-session.json
-bundle.js
-*.js.map
-**/e2e/test_cypress_hello.cy.js
-# Don't include the screenshots and videos that Cypress generates in headless mode.
-**/cypress/videos
-**/cypress/screenshots
-
-# EECS 485 Project 4
-tmp
-output
-
-# EECS 485 Project 5
-output*
-total_document_count.txt
-**/inverted_index/input/crawl/
+# Zip Folder
+hw2.zip
 
 # Python
 *.pyc
@@ -51,12 +18,6 @@ venv/
 venv3/
 .venv/
 .pytest_cache
-
-# JavaScript
-bundle.js
-*node_modules*
-files_for_autograder_io/
-*/var/*
 
 # Virtual Machines
 .vagrant/
