@@ -17,6 +17,12 @@ def image_patches(image, patch_size=(16, 16)):
     """
     # TODO: Use slicing to complete the function
     output = []
+    for i in range(image.shape[0]//patch_size[0]):
+        for j in range(image.shape[1]//patch_size[1]):
+            output.append(image[i*patch_size[0]:(i+1)*patch_size[0], j*patch_size[1]:(j+1)*patch_size[1]])
+    for i in range(len(output)):
+        output[i] = (output[i] - np.mean(output[i])) / np.std(output[i])
+    # print(type(output))
     return output
 
 
@@ -95,7 +101,7 @@ def main():
     patches = image_patches(img)
     # Now choose any three patches and save them
     # chosen_patches should have those patches stacked vertically/horizontally
-    chosen_patches = None
+    chosen_patches = patches[0]
     save_img(chosen_patches, "./image_patches/q1_patch.png")
 
     # (b), (c): No code
