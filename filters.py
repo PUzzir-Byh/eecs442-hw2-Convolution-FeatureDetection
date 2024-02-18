@@ -2,7 +2,11 @@ import os
 
 import numpy as np
 
+import scipy
+
 from common import read_img, save_img
+
+import matplotlib.pyplot as plt
 
 
 def image_patches(image, patch_size=(16, 16)):
@@ -17,12 +21,11 @@ def image_patches(image, patch_size=(16, 16)):
     """
     # TODO: Use slicing to complete the function
     output = []
-    for i in range(image.shape[0]//patch_size[0]):
-        for j in range(image.shape[1]//patch_size[1]):
-            output.append(image[i*patch_size[0]:(i+1)*patch_size[0], j*patch_size[1]:(j+1)*patch_size[1]])
+    for i in range(image.shape[0] // patch_size[0]):
+        for j in range(image.shape[1] // patch_size[1]):
+            output.append(image[i * patch_size[0]:(i + 1) * patch_size[0], j * patch_size[1]:(j + 1) * patch_size[1]])
     for i in range(len(output)):
         output[i] = (output[i] - np.mean(output[i])) / np.std(output[i])
-    # print(type(output))
     return output
 
 
@@ -36,8 +39,20 @@ def convolve(image, kernel):
            kernel: h x w
     Output- convolve: H x W
     """
-    output = None
+
+    zero_padding_x = int(np.ceil((kernel.shape[0] - 1) / 2))
+    zero_padding_y = int(np.ceil((kernel.shape[1] - 1) / 2))
+    flipped_kernel = np.fliplr(np.flipud(kernel))
+    H, W = image.shape
+    output = np.zeros((H, W))
+    image_padding = np.pad(image, ((zero_padding_x, zero_padding_x), (zero_padding_y, zero_padding_y)), "constant")
+    # print(image_padding.shape)
+    for i in range(image_padding.shape[0] - flipped_kernel.shape[0]):
+        for j in range(image_padding.shape[1] - flipped_kernel.shape[1]):
+            output[i, j] = np.sum(flipped_kernel * image_padding[i:i + flipped_kernel.shape[0], j:j + flipped_kernel.shape[1]])
     return output
+
+    # return scipy.ndimage.convolve(image, kernel, mode='constant')
 
 
 def edge_detection(image):
@@ -48,14 +63,14 @@ def edge_detection(image):
     Output- Ix, Iy, grad_magnitude: H x W
     """
     # TODO: Fix kx, ky
-    kx = None  # 1 x 3
-    ky = None  # 3 x 1
+    kx = np.array([[-1, 0, 1]])  # 1 x 3
+    ky = np.array([[-1, 0, 1]]).T  # 3 x 1
 
     Ix = convolve(image, kx)
     Iy = convolve(image, ky)
 
     # TODO: Use Ix, Iy to calculate grad_magnitude
-    grad_magnitude = None
+    grad_magnitude = np.sqrt(np.square(Ix) + np.square(Iy))
 
     return Ix, Iy, grad_magnitude
 
@@ -72,6 +87,7 @@ def sobel_operator(image):
 
     return Gx, Gy, grad_magnitude
 
+
 def bilateral_filter(image, window_size, sigma_d, sigma_r):
     """
     Return filtered image using a bilateral filter
@@ -83,7 +99,15 @@ def bilateral_filter(image, window_size, sigma_d, sigma_r):
     Output- output: filtered image
     """
     # TODO: complete the bilateral filtering, assuming spatial and range kernels are gaussian
-    output = None
+    h, w = image.shape[:2]
+    output = np.zeros((h, w))
+    padding_h = int(np.ceil((window_size[0] - 1) / 2))
+    padding_w = int(np.ceil((window_size[1] - 1) / 2))
+    image_padded = np.pad(image, ((padding_h, padding_h), (padding_w, padding_w)), mode='constant')
+    for i in range(output.shape[0]):
+        for j in range(output.shape[1]):
+
+            output[i, j] =
 
     return output
 
@@ -101,7 +125,7 @@ def main():
     patches = image_patches(img)
     # Now choose any three patches and save them
     # chosen_patches should have those patches stacked vertically/horizontally
-    chosen_patches = patches[0]
+    chosen_patches = patches[2]
     save_img(chosen_patches, "./image_patches/q1_patch.png")
 
     # (b), (c): No code
@@ -118,11 +142,25 @@ def main():
     # (c)
     # Calculate the Gaussian kernel described in the question.
     # There is tolerance for the kernel.
-    kernel_gaussian = None
+    ax = np.linspace(-2 / 2., 2 / 2., 3)
+    gauss = np.exp(-0.5 * np.square(ax) / np.square(0.572))
+    kernel = np.outer(gauss, gauss)
+    kernel_gaussian = kernel / np.sum(kernel)
 
     filtered_gaussian = convolve(img, kernel_gaussian)
+    # print("max: ", np.max(filtered_gaussian), ", min: ", np.min(filtered_gaussian))
+    # plt.imsave('original.png', filtered_gaussian, cmap="gray", vmin = 0, vmax = 255)
     save_img(filtered_gaussian, "./gaussian_filter/q2_gaussian.png")
+    """
+    ax = np.linspace(-2 / 2., 2 / 2., 3)
+    gauss = np.exp(-0.5 * np.square(ax) / np.square(2))
+    kernel = np.outer(gauss, gauss)
+    kernel_gaussian = kernel
 
+    filtered_gaussian = convolve(img, kernel_gaussian)
+    print("max: ", np.max(filtered_gaussian), ", min: ", np.min(filtered_gaussian))
+    plt.imsave('modified.png', filtered_gaussian, cmap="gray", vmin=0, vmax=255)
+    """
     # (d), (e): No code
 
     # (f): Complete edge_detection()
@@ -136,7 +174,7 @@ def main():
     save_img(edge_with_gaussian, "./gaussian_filter/q3_edge_gaussian.png")
 
     print("Gaussian Filter is done. ")
-    
+
     # (h) complete biliateral_filter()
     if not os.path.exists("./bilateral"):
         os.makedirs("./bilateral")
