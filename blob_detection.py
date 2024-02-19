@@ -31,7 +31,11 @@ def gaussian_filter(image, sigma):
     # TODO implement gaussian filtering of size kernel_size x kernel_size
     # Similar to Corner detection, use scipy's convolution function.
     # Again, be consistent with the settings (mode = 'reflect').
-    output = None
+    ax = np.linspace(-(kernel_size - 1) / 2., (kernel_size - 1) / 2., kernel_size)
+    gauss = np.exp(-0.5 * np.square(ax) / np.square(sigma))
+    gaussian_filter = np.outer(gauss, gauss)
+    gaussian_filter = gaussian_filter / np.sum(gaussian_filter)
+    output = scipy.ndimage.convolve(image, gaussian_filter, mode='reflect')
     return output
 
 

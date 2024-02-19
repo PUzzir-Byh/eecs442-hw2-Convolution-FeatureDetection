@@ -18,10 +18,10 @@ def nnUpsample(I, factor):
 # (a): Fill in the filters to get the data to match
 
 filter0 = np.diag([0, 1, 0])
-filter1 = np.diag([0, 1, 0])
-filter2 = np.diag([0, 1, 0])
-filter3 = np.diag([0, 1, 0])
-filter4 = np.diag([0, 1, 0])
+filter1 = np.ones((3, 3))
+filter2 = np.ones((3, 3), dtype=np.float64) / 9.0
+filter3 = [[0, 0, 0], [1, 0, 0], [0, 0, 0]]
+filter4 = [[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]]
 
 # (b): No code
 
