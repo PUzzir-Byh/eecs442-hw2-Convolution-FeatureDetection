@@ -39,7 +39,7 @@ def convolve(image, kernel):
            kernel: h x w
     Output- convolve: H x W
     """
-
+    """
     zero_padding_x = int(np.ceil((kernel.shape[0] - 1) / 2))
     zero_padding_y = int(np.ceil((kernel.shape[1] - 1) / 2))
     flipped_kernel = np.fliplr(np.flipud(kernel))
@@ -49,10 +49,12 @@ def convolve(image, kernel):
     # print(image_padding.shape)
     for i in range(image_padding.shape[0] - flipped_kernel.shape[0]):
         for j in range(image_padding.shape[1] - flipped_kernel.shape[1]):
-            output[i, j] = np.sum(flipped_kernel * image_padding[i:i + flipped_kernel.shape[0], j:j + flipped_kernel.shape[1]])
+            output[i, j] = np.sum(
+                flipped_kernel * image_padding[i:i + flipped_kernel.shape[0], j:j + flipped_kernel.shape[1]])
     return output
-
-    # return scipy.ndimage.convolve(image, kernel, mode='constant')
+    """
+    # flipped_kernel = np.fliplr(np.flipud(kernel))
+    return scipy.ndimage.convolve(image, kernel, mode='constant')
 
 
 def edge_detection(image):
@@ -83,7 +85,13 @@ def sobel_operator(image):
     Output- Gx, Gy, grad_magnitude: H x W
     """
     # TODO: Use convolve() to complete the function
-    Gx, Gy, grad_magnitude = None, None, None
+
+    Sx = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
+    Sy = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
+    # Gx, Gy, grad_magnitude = None, None, None
+    Gx = convolve(image, Sx)
+    Gy = convolve(image, Sy)
+    grad_magnitude = np.sqrt(np.square(Gx) + np.square(Gy))
 
     return Gx, Gy, grad_magnitude
 
@@ -101,13 +109,21 @@ def bilateral_filter(image, window_size, sigma_d, sigma_r):
     # TODO: complete the bilateral filtering, assuming spatial and range kernels are gaussian
     h, w = image.shape[:2]
     output = np.zeros((h, w))
-    padding_h = int(np.ceil((window_size[0] - 1) / 2))
+    padding_h = int(np.ceil((window_size[0] - 1) / 2))  # 2
     padding_w = int(np.ceil((window_size[1] - 1) / 2))
     image_padded = np.pad(image, ((padding_h, padding_h), (padding_w, padding_w)), mode='constant')
+    weight = np.zeros((window_size[0], window_size[1]))
+    window = np.zeros((window_size[0], window_size[1]))
+
     for i in range(output.shape[0]):
         for j in range(output.shape[1]):
-
-            output[i, j] =
+            window = image_padded[i:i + 5, j:j + 5]
+            for k in range(-2, 3):
+                for l in range(-2, 3):
+                    weight[k + 2, l + 2] = -((np.square(k) + np.square(l)) / (2 * np.square(sigma_d))) - (
+                        (np.square(image_padded[i + 2, j + 2] - image_padded[i + k + 2, j + l + 2])))
+            weight = np.exp(weight)
+            output[i, j] = np.sum(window * weight) / np.sum(weight)
 
     return output
 
@@ -142,8 +158,10 @@ def main():
     # (c)
     # Calculate the Gaussian kernel described in the question.
     # There is tolerance for the kernel.
-    ax = np.linspace(-2 / 2., 2 / 2., 3)
-    gauss = np.exp(-0.5 * np.square(ax) / np.square(0.572))
+    ax = np.linspace(-4 / 2., 4 / 2., 5)
+    # ax = np.linspace(-2 / 2., 2 / 2., 3)
+    gauss = np.exp(-0.5 * np.square(ax) / np.square(3))
+    # gauss = np.exp(-0.5 * np.square(ax) / np.square(0.572))
     kernel = np.outer(gauss, gauss)
     kernel_gaussian = kernel / np.sum(kernel)
 
@@ -213,14 +231,25 @@ def main():
                             [3, 3, 5, 3, 0, 3, 5, 3, 3],
                             [0, 2, 3, 5, 5, 5, 3, 2, 0],
                             [0, 0, 3, 2, 2, 2, 3, 0, 0]])
-    filtered_LoG1 = None
-    filtered_LoG2 = None
+    filtered_LoG1 = convolve(img, kernel_LoG1)
+    filtered_LoG2 = convolve(img, kernel_LoG2)
     # Use convolve() to convolve img with kernel_LOG1 and kernel_LOG2
     save_img(filtered_LoG1, "./log_filter/q1_LoG1.png")
     save_img(filtered_LoG2, "./log_filter/q1_LoG2.png")
 
     # (b)
     # Follow instructions in pdf to approximate LoG with a DoG
+    data = np.load('log1d.npz')
+    kernel_LoG = data['log50']
+    kernel_Gau50 = data['gauss50']
+    kernel_Gau53 = data['gauss53']
+
+    plt.plot(kernel_LoG, label = 'LoG')
+    plt.plot(kernel_Gau53 - kernel_Gau50, label = 'DoG')
+    plt.plot(kernel_Gau50, label = 'Gauss50')
+    plt.plot(kernel_Gau53, label = 'Gauss53')
+    plt.legend(loc = 'upper left')
+    plt.show()
     print("LoG Filter is done. ")
 
 

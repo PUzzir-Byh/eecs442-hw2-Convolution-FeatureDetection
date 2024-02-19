@@ -1,4 +1,5 @@
 import os
+from typing import Callable, Any
 
 import numpy as np
 import scipy.ndimage
@@ -6,6 +7,8 @@ import scipy.ndimage
 # Use zero padding (Set mode = 'constant'). Refer docs for further info.
 
 from common import read_img, save_img
+
+import matplotlib.pyplot as plt
 
 
 def corner_score(image, u=5, v=5, window_size=(5, 5)):
@@ -22,7 +25,18 @@ def corner_score(image, u=5, v=5, window_size=(5, 5)):
 
     Output- results: a image of size H x W
     """
-    output = None
+    u = -u
+    v = -v
+
+    non: Callable[[int], int] = lambda s: s if s < 0 else None
+    mom: Callable[[int], int] = lambda s: max(0, s)
+
+    image_offset = np.zeros_like(image)
+    image_offset[mom(u): non(u), mom(v): non(v)] = image[mom(-u):non(-u), mom(-v):non(-v)]
+    square_difference = np.square(image_offset - image)
+
+    kernel = np.ones(window_size, np.uint8)
+    output = scipy.ndimage.convolve(square_difference, kernel, mode='constant')
     return output
 
 
@@ -36,16 +50,38 @@ def harris_detector(image, window_size=(5, 5)):
     Output- results: a image of size H x W
     """
     # compute the derivatives
-    Ix = None
-    Iy = None
+    kx = np.array([[-0.5, 0, 0.5]])
+    ky = np.array([[-0.5, 0, 0.5]]).T
+    Ix = scipy.ndimage.convolve(image, kx, mode='constant')
+    Iy = scipy.ndimage.convolve(image, ky, mode='constant')
+    """
+    padding_x = int(np.ceil((window_size[0] - 1) / 2))
+    padding_y = int(np.ceil((window_size[1] - 1) / 2))
+    h, w = Ix.shape[:2]
+    Ix_padded = np.pad(Ix, ((padding_x, padding_x), (padding_y, padding_y)), mode='constant')
+    Iy_padded = np.pad(Iy, ((padding_x, padding_x), (padding_y, padding_y)), mode='constant')
+    """
+    # Ixx = np.zeros(shape=(h, w))
+    # Iyy = np.zeros(shape=(h, w))
+    # Ixy = np.zeros(shape=(h, w))
+    kernel_sum = np.ones(window_size)
+    """
+    for i in range(h):
+        for j in range(w):
+            for x in range(window_size[0]):
+                for y in range(window_size[1]):
+                    Ixx[i, j] += np.square(Ix_padded[i+x, j+y])
+                    Iyy[i, j] += np.square(Iy_padded[i+x, j+y])
+                    Ixy[i, j] += Ix_padded[i+x, j+y] * Iy_padded[i+x, j+y]
+    """
+    Ixx = scipy.ndimage.convolve(np.square(Ix), kernel_sum, mode='constant')
+    Iyy = scipy.ndimage.convolve(np.square(Iy), kernel_sum, mode='constant')
+    Ixy = scipy.ndimage.convolve(Ix*Iy, kernel_sum, mode='constant')
 
-    Ixx = None
-    Iyy = None
-    Ixy = None
 
     # For each image location, construct the structure tensor and calculate
     # the Harris response
-    response = None
+    response = (Ixx*Iyy - np.square(Ixy)) - 0.05*np.square(Ixx+Iyy)
 
     return response
 
@@ -62,7 +98,7 @@ def main():
 
     # (b)
     # Define offsets and window size and calulcate corner score
-    u, v, W = None, None, None
+    u, v, W = -5, 0, (5, 5)
 
     score = corner_score(img, u, v, W)
     save_img(score, "./feature_detection/corner_score.png")
@@ -75,7 +111,9 @@ def main():
     # (b)
     harris_corners = harris_detector(img)
     save_img(harris_corners, "./feature_detection/harris_response.png")
-
+    plt.imshow(harris_corners, cmap='hot', aspect='auto')
+    plt.colorbar()
+    plt.show()
 
 if __name__ == "__main__":
     main()
